@@ -167,7 +167,7 @@ Function regexp_count(myPattern As String, mystring As String) As Integer
     regexp_count = Ret
 End Function
 Sub regexp_ReturnSearchCollection(myPattern As String, mystring As String)
-   Set splitString = New Collection
+   Set splitString = New collection
    
    Dim objRegExp As regexp
    Dim objMatch As Match

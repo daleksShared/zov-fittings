@@ -68,13 +68,13 @@ Public Sushk(), ГорбатаяМелочь(), Полкодержатель(), TOPLine(), МелочьОтб4м()
 Public Stul_color_no(), Stul_color_1(), Stul_color_2()
 Public MoikaColors()
 '
-Public params As Collection
+Public params As collection
 Public param As caseParam
 
-Public CaseFittingsCollection As Collection
+Public CaseFittingsCollection As collection
 Public caseFittingCurrent As caseOrderFitting
 
-Public CaseElementsCollection As Collection
+Public CaseElementsCollection As collection
 Public caseElementCurrent As caseOrderElement
 
 Public casepropertyCurrent As caseProperty
@@ -1840,9 +1840,11 @@ newsystem:
                     tempString = ""
                     For caseElementsIterator = 1 To CaseElements.Count
                         tempString = tempString & CaseElements(caseElementsIterator).name & "," & CStr(CaseElements(caseElementsIterator).qty) & ";"
-                       
                     Next caseElementsIterator
-                     caseID = createCaseId(casepropertyCurrent.p_newname, tempString)
+                    Dim nameSP As String
+                    nameSP = casepropertyCurrent.p_newname
+                     caseID = createCaseId(nameSP, tempString)
+                     casepropertyCurrent.p_newname = nameSP
                 End If
                 
                 name = casepropertyCurrent.p_newname
@@ -2767,7 +2769,7 @@ Public Function FindFittings(ByVal OrderId As Long, _
                             Optional ByVal face, _
                             Optional ByRef HandleScrew, _
                             Optional ByRef changeCaseZaves, _
-                            Optional ByVal SearchStringsCollection As Collection _
+                            Optional ByVal SearchStringsCollection As collection _
                             ) As Variant
                             
 
@@ -2777,6 +2779,7 @@ Public Function FindFittings(ByVal OrderId As Long, _
                 InStr(ShiftK, Fitting, "на заказ завес", vbTextCompare) > 0 Or _
                 InStr(ShiftK, Fitting, "на заказ петли", vbTextCompare) > 0) And _
                 (InStr(ShiftK, Fitting, "Sens", vbTextCompare) > 0 Or InStr(ShiftK, Fitting, "Сенс", vbTextCompare) > 0 Or _
+                InStr(ShiftK, Fitting, "FGV", vbTextCompare) > 0 Or InStr(ShiftK, Fitting, "ФГ", vbTextCompare) > 0 Or _
                 InStr(ShiftK, Fitting, "Blumot", vbTextCompare) > 0 Or InStr(ShiftK, Fitting, "FGV", vbTextCompare) > 0) Or _
                 (InStr(ShiftK, Fitting, "Петли ", vbTextCompare) > 0 And InStr(ShiftK, Fitting, " на весь заказ", vbTextCompare) > 0) Or _
                 (InStr(ShiftK, Fitting, "Завес", vbTextCompare) > 0 And InStr(ShiftK, Fitting, "на весь заказ", vbTextCompare) > 0) _
@@ -3347,6 +3350,21 @@ exit_if:
                         Cells(ActiveCell.row, 10).Value = "!!!Смена завесов на БЛЮМОУШИН!!!"
                     End If
                 End If
+             ElseIf (InStr(ShiftK, Fitting, "FGV", vbTextCompare) > 0) And (InStr(ShiftK, Fitting, "довод", vbTextCompare) > 0) Then
+                If changeCaseZaves <> 4 Then
+                    kitchenPropertyCurrent.changeCaseZaves = 4
+                    changeCaseZaves = 4
+                    'casepropertyCurrent.p_changeZaves = 3
+                    ShiftK = Len(Fitting)
+                    ActiveCell.Characters(k, Len(Item)).Font.Color = vbGreen
+                    If Cells(ActiveCell.row, 10).Value <> "" Then
+                        t = Cells(ActiveCell.row, 10).Value
+                        
+                        Cells(ActiveCell.row, 10).Value = t & "!!!Смена завесов на FGV с доводчиком!!!"
+                         Else
+                        Cells(ActiveCell.row, 10).Value = "!!!Смена завесов на FGV с доводчиком!!!"
+                    End If
+                End If
             ElseIf (InStr(ShiftK, Fitting, "FGV", vbTextCompare) > 0) Then
                 If changeCaseZaves <> 3 Then
                 kitchenPropertyCurrent.changeCaseZaves = 3
@@ -3561,6 +3579,26 @@ err_AddCaseParamsbySp:
 
     MsgBox Error, vbCritical, "Добавление шкафа в заказ"
 End Sub
+
+Public Function GetShelfQtyFromFacadeHeight(size As Integer) As Integer
+Dim polkaQty As Integer
+polkaQty = 0
+If size > 400 And size <= 800 Then
+polkaQty = 1
+ElseIf size > 800 And size <= 1200 Then
+polkaQty = 2
+ElseIf size > 1200 And size <= 1600 Then
+polkaQty = 3
+ElseIf size > 1600 And size <= 2000 Then
+polkaQty = 4
+ElseIf size > 2000 And size <= 2400 Then
+polkaQty = 5
+ElseIf size > 2400 Then
+polkaQty = 6
+End If
+GetShelfQtyFromFacadeHeight = polkaQty
+End Function
+
 Public Function GetCaseId(name As String) As Integer
 On Error GoTo err_GetCaseId
 Dim prm As ADODB.Parameter
@@ -3584,7 +3622,7 @@ GetCaseId = 0
 MsgBox Error, vbCritical, "Поиск прототипа в базе"
 End Function
 
-Public Function createCaseId(name As String, args As String) As Integer
+Public Function createCaseId(ByRef name As String, args As String) As Integer
 On Error GoTo err_createCaseId
 Dim prm As ADODB.Parameter
 Dim comm As ADODB.Command
@@ -3600,9 +3638,11 @@ comm.Parameters.Append comm.CreateParameter("@legDefault", adVarChar, adParamInp
 comm.Parameters.Append comm.CreateParameter("@str", adVarChar, adParamInput, 512, args)
 
 comm.Parameters.Append comm.CreateParameter("@caseid", adInteger, adParamOutput)
+comm.Parameters.Append comm.CreateParameter("@versionedName", adVarChar, adParamOutput, 150)
+
 comm.Execute
 createCaseId = comm.Parameters("@caseid")
-
+name = comm.Parameters("@versionedName")
 
 Exit Function
 err_createCaseId:
@@ -3691,12 +3731,14 @@ On Error GoTo err_AddCaseSP
                 comm.Parameters.Append comm.CreateParameter("@HandleExtra", adTinyInt, adParamInput, , Null)
             End If
         End If
-    
         If Not IsEmpty(Leg) Then
             comm.Parameters.Append comm.CreateParameter("@Leg", adVarChar, adParamInput, 15, Leg)
     '        Else
     '        comm.Parameters.Append comm.CreateParameter("@Leg", adVarChar, adParamInput, 15, Null)
-            
+        ElseIf Not casepropertyCurrent Is Nothing Then
+            If casepropertyCurrent.p_cabType = 3 Then
+                comm.Parameters.Append comm.CreateParameter("@Leg", adVarChar, adParamInput, 15, "оптима 100")
+            End If
         End If
         
         comm.Parameters.Append comm.CreateParameter("@DoorCount", adTinyInt, adParamInput, , DoorCount)

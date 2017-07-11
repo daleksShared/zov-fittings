@@ -2,13 +2,18 @@ Attribute VB_Name = "parser"
 Option Explicit
 Option Compare Text
 Const NaprMainDefault As String = "шарик"
-Public splitString As New Collection
+Public splitString As New collection
 Public splitStringItem As clSplitString
-Public casefasades As New Collection
-Public CaseElements As New Collection
-Public caseFurnCollection As New Collection
-Public casezones As New Collection
-
+Public casefasades As New collection
+Public CaseElements As New collection
+Public caseFurnCollection As New collection
+Public casezones As New collection
+Private Enum CabElements
+Polka
+Polik
+Dverka
+ShuflImit
+End Enum
 Private Sub trest()
 Dim str As Variant
 GetOtbGorbColors OtbGorbColors
@@ -41,8 +46,8 @@ MsgBox (resStr)
 'MsgBox Replace("ШН90(355/1,355/1)вверх", regexp_ReturnSearch(patGetSkobochki, "ШН90(355/1,355/1)вверх"), "/" & parseGetSumFromSKOBOCHKI(regexp_ReturnSearch(patGetSkobochki, "ШН90(355/1,355/1)вверх")))
 End Sub
 Function getColorForArrayFromString(ByVal rawstr As String, ByRef colorlist()) As String
-Dim cCol As Collection
-Set cCol = New Collection
+Dim cCol As collection
+Set cCol = New collection
 
 SortArrayByLengthDesc colorlist
 Dim i As Integer
@@ -872,6 +877,13 @@ Public Function parse_case(ByVal inputname As String) As String
          
         parseFasadesSHLSH (mRegexp.regexp_ReturnSearch(patCaseFasades, casepropertyCurrent.p_casename))
         result = casepropertyCurrent.p_newname
+    ElseIf Mid(inputname, 1, 2) = "ПЛ" And mRegexp.regexp_check(patCaseFasades, casepropertyCurrent.p_casename) Then
+         
+        parseFasadesPLSH (mRegexp.regexp_ReturnSearch(patCaseFasades, casepropertyCurrent.p_casename))
+        result = casepropertyCurrent.p_newname
+    ElseIf Mid(inputname, 1, 2) = "ПН" And mRegexp.regexp_check(patCaseFasades, casepropertyCurrent.p_casename) Then
+        parseFasadesPN (mRegexp.regexp_ReturnSearch(patCaseFasades, casepropertyCurrent.p_casename))
+        result = casepropertyCurrent.p_newname
 '        result = mRegexp.regexp_replace(patCaseFasades, inputname, casepropertyCurrent.p_FasadesString)
     ElseIf regexp_check(patSHL_check2, inputname) Then
         result = Replace(result, regexp_ReturnSearch(patSHL_check2, inputname), "")
@@ -928,7 +940,7 @@ Dim range_data As String
 Dim range_data_pos As Integer
 
 
-Dim case_fasades As New Collection
+Dim case_fasades As New collection
 Dim cf As casefasade
 
 
@@ -1099,7 +1111,7 @@ Dim range_data As String
 Dim range_data_pos As Integer
 
 
-Dim case_fasades As New Collection
+Dim case_fasades As New collection
 Dim cf As casefasade
 
 
@@ -1237,11 +1249,6 @@ Sub parse_RLFull()
 'patCheckTbTBV = "тб[+]\d+тбв"
 Dim inputstring As String
 Dim storeinputstring As String
-Dim patlocalGetOption As String
-patlocalGetOption = "\d+(?:[+]\d+)?"
-
-Dim patCheckVP As String
-patlocalGetOption = "\d+(?:[+]\d+)?"
 
  casepropertyCurrent.p_newname = "РЛ "
 'On Error GoTo err_parseFasades
@@ -1284,11 +1291,11 @@ Dim mincount As Integer
 mincount = 0
 
 'стартовые элементы каркаса
-Set caseElementItem = New caseElement
-caseElementItem.init
-caseElementItem.name = "цоколь верхний"
-caseElementItem.qty = 2
-CaseElements.Add caseElementItem
+'Set caseElementItem = New caseElement
+'caseElementItem.init
+'caseElementItem.name = "цоколь верхний"
+'caseElementItem.qty = 2
+'CaseElements.Add caseElementItem
 
 Set caseElementItem = New caseElement
 caseElementItem.init
@@ -1443,22 +1450,23 @@ If casefasades.Count > 0 Then
         End If
         If cf_item.isNisha Then
             casepropertyCurrent.p_newname = casepropertyCurrent.p_newname & cf_item.qty & "ниш" & ","
-            If cf_curItem_index < casefasades.Count Then
+            'If cf_curItem_index < casefasades.Count Then
                 Set caseElementItem = New caseElement
                 caseElementItem.init
                 caseElementItem.name = "полик"
                 caseElementItem.qty = 1
                 CaseElements.Add caseElementItem
-            End If
+            'End If
         End If
         If cf_item.isDveri Then
             casepropertyCurrent.p_newname = casepropertyCurrent.p_newname & cf_item.qty & "дв" & ","
             Set caseElementItem = New caseElement
             caseElementItem.init
             caseElementItem.name = "дверка"
-            caseElementItem.qty = cf_item.qty
+            caseElementItem.qty = 1 'cf_item.qty
             CaseElements.Add caseElementItem
         End If
+        
     Next cf_item
 
         
@@ -1478,72 +1486,103 @@ err_parseFasades:
 casepropertyCurrent.p_FasadesString = storeinputstring
 MsgBox ("Ошибка обработки строки фасадов!!!")
 End Sub
-Sub parseFasadesSHLSH(inputstring As String)
+Sub parseFasadesPN(inputstring As String)
+casepropertyCurrent.p_newname = "ПН "
+casepropertyCurrent.p_newsystem = True
 
-'Dim patCheckTbTBV As String
-'patCheckTbTBV = "тб[+]\d+тбв"
-
-Dim patlocalGetOption As String
-patlocalGetOption = "\d+(?:[+]\d+)?"
-
-Dim patCheckVP As String
-patlocalGetOption = "\d+(?:[+]\d+)?"
-
- casepropertyCurrent.p_newname = "ШЛШ "
-'On Error GoTo err_parseFasades
-Dim storeinputstring As String
-storeinputstring = inputstring
-Dim max As Integer
-Dim min As Integer
-Dim cf_count As Integer
-Dim cf_curItem_index As Integer
-
-min = 9999
-max = 0
-'Dim AddT As Boolean
-'AddT = False
+'стартовые элементы каркаса
 While CaseElements.Count > 0
 CaseElements.Remove (1)
 Wend
+
 Dim caseElementItem As New caseElement
 
-casepropertyCurrent.p_newsystem = True
-
-Dim caseFur As caseFurniture
-
-While casefasades.Count > 0
-casefasades.Remove (1)
-Wend
-If Len(inputstring) = 0 Then
-    GoTo err_parseFasades
-End If
-Dim cnameNew As String
-cnameNew = ""
-Dim NaprMain As String
-Dim NaprMainLength As String
-Dim cc() As String
-Dim c As Variant
-Dim cc_element As String
-
-Dim cc_count As Integer
-Dim cf As casefasade
-
-Dim maxcount As Integer
-maxcount = 0
-Dim mincount As Integer
-mincount = 0
-
-'стартовые элементы каркаса
 Set caseElementItem = New caseElement
 caseElementItem.init
-caseElementItem.name = "ДВП"
+caseElementItem.name = "полик"
+caseElementItem.qty = 2
+CaseElements.Add caseElementItem
+
+Set caseElementItem = New caseElement
+caseElementItem.init
+caseElementItem.name = "бочок ШН"
+caseElementItem.qty = 2
+CaseElements.Add caseElementItem
+
+Set caseElementItem = New caseElement
+caseElementItem.init
+caseElementItem.name = "ДВП ПЛ"
 caseElementItem.qty = 1
 CaseElements.Add caseElementItem
 
 Set caseElementItem = New caseElement
 caseElementItem.init
-caseElementItem.name = "цоколь верхний"
+caseElementItem.name = "фурнитураПеналов"
+caseElementItem.qty = 1
+CaseElements.Add caseElementItem
+
+Call CabAddElementsFromFacadesCollection(inputstring, False)
+End Sub
+Sub parseFasadesPLSH(inputstring As String)
+
+casepropertyCurrent.p_newsystem = True
+casepropertyCurrent.p_newname = "ПЛШ "
+
+Dim storeinputstring As String
+storeinputstring = inputstring
+
+
+
+'стартовые элементы каркаса
+While CaseElements.Count > 0
+CaseElements.Remove (1)
+Wend
+
+Dim caseElementItem As New caseElement
+
+Set caseElementItem = New caseElement
+caseElementItem.init
+caseElementItem.name = "крышка ШЛ"
+caseElementItem.qty = 1
+CaseElements.Add caseElementItem
+
+Set caseElementItem = New caseElement
+caseElementItem.init
+caseElementItem.name = "бочок ШЛ"
 caseElementItem.qty = 2
+CaseElements.Add caseElementItem
+
+Set caseElementItem = New caseElement
+caseElementItem.init
+caseElementItem.name = "ДВП ПЛ"
+caseElementItem.qty = 1
+CaseElements.Add caseElementItem
+
+Set caseElementItem = New caseElement
+caseElementItem.init
+caseElementItem.name = "фурнитураПеналов"
+caseElementItem.qty = 1
+CaseElements.Add caseElementItem
+
+Call CabAddElementsFromFacadesCollection(inputstring, True)
+
+End Sub
+Sub parseFasadesSHLSH(inputstring As String)
+
+casepropertyCurrent.p_newname = "ШЛШ "
+casepropertyCurrent.p_newsystem = True
+
+'стартовые элементы каркаса
+While CaseElements.Count > 0
+CaseElements.Remove (1)
+Wend
+
+Dim caseElementItem As New caseElement
+
+Set caseElementItem = New caseElement
+caseElementItem.init
+caseElementItem.name = "ДВП"
+caseElementItem.qty = 1
 CaseElements.Add caseElementItem
 
 Set caseElementItem = New caseElement
@@ -1558,178 +1597,7 @@ caseElementItem.name = "бочок ШЛ"
 caseElementItem.qty = 2
 CaseElements.Add caseElementItem
 
-NaprMain = mRegexp.regexp_ReturnSearch(patCaseFasadesNapravlMain, inputstring)
-NaprMainLength = mRegexp.regexp_ReturnSearch(patNumber, NaprMain)
-
-If Len(NaprMainLength) > 0 Then NaprMain = Replace(NaprMain, NaprMainLength, "")
-inputstring = mRegexp.regexp_ReturnSearch(patCaseFasadesOnlyString, inputstring)
-inputstring = Mid(inputstring, 2, Len(inputstring) - 2)
-cc = Split(inputstring, ",")
-cc_count = 0
-
-For Each c In cc
-    cc_element = CStr(c)
-    cc_count = cc_count + 1
-    Set cf = New casefasade
-    cf.init
-    If mRegexp.regexp_check(patCaseFasadesIsNisha, cc_element) Then
-        cf.isNisha = True
-    ElseIf mRegexp.regexp_check(patCaseFasadesIsDver, cc_element) Then
-        cf.isDveri = True
-    ElseIf mRegexp.regexp_check(patCaseFasadesIsShufl, cc_element) Then
-        cf.isShuflyada = True
-        If InStr(1, cc_element, "имит") > 0 Then
-        cf.dopinfo = "имитация"
-        End If
-    Else
-       cf.isShuflyada = True
-    End If
-    If mRegexp.regexp_check(patCaseFasadesIsVitr, cc_element) Then
-        cf.isVitr = True
-    End If
-    
-    If mRegexp.regexp_check(patCaseFasadesQty, cc_element) Then
-        cf.qty = CInt(mRegexp.regexp_ReturnSearch(patCaseFasadesQty, cc_element))
-    Else
-        cf.qty = 1
-    End If
-    If cf.isNisha = False And mRegexp.regexp_check(patCaseFasadesNapravl, cc_element) Then
-        cf.isShuflyada = True
-       ' cf.napravl = cc_element
-        cf.napravl = mRegexp.regexp_ReturnSearch(patCaseFasadesNapravl, cc_element)
-        If (cf.napravl <> "") Then
-            cf.fCustomerFur = mRegexp.regexp_check(patCaseFasadesNapravlCustomer, cf.napravl)
-        End If
-        
-'        If mRegexp.regexp_check(patlocalGetOption, cf.napravl) Then
-'            cf.foption = mRegexp.regexp_ReturnSearch(patNumber, cf.napravl)
-'            cf.napravl = mRegexp.regexp_replace(patNumber, cf.napravl, "")
-'        End If
-        
-'        If mRegexp.regexp_check(patCheckTbTBV, cf.napravl) Then
-'            cf.napravl = mRegexp.regexp_replace(patNumber, cf.napravl, "")
-'        End If
-    End If
-    If mRegexp.regexp_check(patCaseFasadesWidth, cc_element) Then
-        cf.size = CInt(mRegexp.regexp_ReturnSearch(patCaseFasadesWidth, cc_element))
-'        If cf.size >= 570 Then
-'            cf.isShuflyada = False
-'            cf.isDveri = True
-'        End If
-    End If
-    
-    casefasades.Add cf
-Next c
-
-Dim cf_item As casefasade
-
-If casefasades.Count > 0 Then
-   
-    
-    For Each cf_item In casefasades
-        If cf_item.isShuflyada Then
-            If cf_item.size >= 570 And cf_item.napravl = "" Then
-                cf_item.isShuflyada = False
-                cf_item.isDveri = True
-            End If
-        End If
-        If cf_item.isDveri Then
-            If IsEmpty(casepropertyCurrent.p_DoorCount) Then
-                casepropertyCurrent.p_DoorCount = cf_item.qty
-                Else
-                casepropertyCurrent.p_DoorCount = casepropertyCurrent.p_DoorCount + cf_item.qty
-            End If
-        End If
-        If cf_item.isShuflyada Then
-            If cf_item.size > 0 Then
-                If cf_item.size > max Then max = cf_item.size
-                If cf_item.size < min Then min = cf_item.size
-            End If
-            casepropertyCurrent.p_ShuflCount = casepropertyCurrent.p_ShuflCount + cf_item.qty
-        End If
-        If cf_item.isVitr Then
-            If IsEmpty(casepropertyCurrent.p_windowcount) Then
-                casepropertyCurrent.p_windowcount = cf_item.qty
-            ElseIf casepropertyCurrent.p_windowcount = 0 Then
-                casepropertyCurrent.p_windowcount = cf_item.qty
-            Else
-               casepropertyCurrent.p_windowcount = casepropertyCurrent.p_windowcount + cf_item.qty
-            End If
-        End If
-        
-        If IsEmpty(casepropertyCurrent.p_FasadesCount) Then
-            casepropertyCurrent.p_FasadesCount = cf_item.qty
-            Else
-            casepropertyCurrent.p_FasadesCount = casepropertyCurrent.p_FasadesCount + cf_item.qty
-        End If
-       
-        
-        
-    Next cf_item
-        If NaprMain = "" Then NaprMain = NaprMainDefault
-         cf_curItem_index = 0
-        For Each cf_item In casefasades
-         cf_curItem_index = cf_curItem_index + 1
-        If cf_item.isShuflyada Then
-          
-          
-          If cf_item.dopinfo = "имитация" Then
-            casepropertyCurrent.p_newname = casepropertyCurrent.p_newname & "имит" & cf_item.qty & cf_item.napravl & ","
-            Set caseElementItem = New caseElement
-            caseElementItem.init
-            caseElementItem.name = "шуфляда имитация"
-            caseElementItem.qty = cf_item.qty
-            CaseElements.Add caseElementItem
-          Else
-            If cf_item.napravl = "" Then cf_item.napravl = NaprMain
-            If cf_item.fOption = "" Then cf_item.fOption = NaprMainLength
-          Call parserDop.getDrawerMountItem(main.is18(casepropertyCurrent.p_CaseColor), _
-                             cf_item.napravl, _
-                             cf_item.fOption, _
-                             cf_item.qty, _
-                             cf_item.size, _
-                             casepropertyCurrent.p_cabWidth, _
-                             casepropertyCurrent.p_cabDepth, _
-                             cf_item.dopinfo _
-                             )
-          End If
-        End If
-        If cf_item.isNisha Then
-            casepropertyCurrent.p_newname = casepropertyCurrent.p_newname & cf_item.qty & "ниш" & ","
-            If cf_curItem_index < casefasades.Count Then
-                Set caseElementItem = New caseElement
-                caseElementItem.init
-                caseElementItem.name = "полик"
-                caseElementItem.qty = 1
-                CaseElements.Add caseElementItem
-            End If
-        End If
-        If cf_item.isDveri Then
-            casepropertyCurrent.p_newname = casepropertyCurrent.p_newname & cf_item.qty & "дв" & ","
-            Set caseElementItem = New caseElement
-            caseElementItem.init
-            caseElementItem.name = "дверка"
-            caseElementItem.qty = cf_item.qty
-            CaseElements.Add caseElementItem
-        End If
-    Next cf_item
-
-        
-    
-    
-End If
-If IsEmpty(casepropertyCurrent.p_DoorCount) Then casepropertyCurrent.p_DoorCount = 0
-If casepropertyCurrent.p_DoorCount > 0 Then casepropertyCurrent.p_Doormount = "110"
-
-   If Mid(casepropertyCurrent.p_newname, Len(casepropertyCurrent.p_newname), 1) = "," Then
-   casepropertyCurrent.p_newname = Mid(casepropertyCurrent.p_newname, 1, Len(casepropertyCurrent.p_newname) - 1)
-   End If
-
-
-Exit Sub
-err_parseFasades:
-casepropertyCurrent.p_FasadesString = storeinputstring
-MsgBox ("Ошибка обработки строки фасадов!!!")
+Call CabAddElementsFromFacadesCollection(inputstring, True)
 End Sub
 
 Sub parseFasadesSHLGP(inputstring As String)
@@ -2202,6 +2070,231 @@ casepropertyCurrent.p_FasadesString = storeinputstring
 MsgBox ("Ошибка обработки строки фасадов!!!")
 End Sub
 
+Private Sub CabElementsAdd(element As CabElements, qty As Integer)
+    Dim caseElementItem As New caseElement
+    Set caseElementItem = New caseElement
+    caseElementItem.init
+    Select Case element
+        Case CabElements.Polka
+            caseElementItem.name = "полка"
+        Case CabElements.Polik
+            caseElementItem.name = "полик"
+        Case CabElements.Dverka
+            caseElementItem.name = "дверка"
+        Case CabElements.ShuflImit
+            caseElementItem.name = "шуфляда имитация"
+    End Select
+    caseElementItem.qty = qty
+    CaseElements.Add caseElementItem
+End Sub
+
+Private Sub CabAddElementsFromFacadesCollection(inputstring As String, lastPolikIsNedeed As Boolean)
+Dim cf_count As Integer
+Dim originalinputstring As String
+originalinputstring = inputstring
+
+Dim caseElementItem As New caseElement
+
+Dim caseFur As caseFurniture
+
+While casefasades.Count > 0
+casefasades.Remove (1)
+Wend
+If Len(inputstring) = 0 Then
+    GoTo err_parseFasades
+End If
+Dim cnameNew As String
+cnameNew = ""
+Dim NaprMain As String
+Dim NaprMainLength As String
+Dim cc() As String
+Dim c As Variant
+Dim cc_element As String
+
+Dim cc_count As Integer
+Dim cf As casefasade
+
+Dim maxcount As Integer
+maxcount = 0
+Dim mincount As Integer
+mincount = 0
+
+NaprMain = mRegexp.regexp_ReturnSearch(patCaseFasadesNapravlMain, inputstring)
+NaprMainLength = mRegexp.regexp_ReturnSearch(patNumber, NaprMain)
+
+If Len(NaprMainLength) > 0 Then NaprMain = Replace(NaprMain, NaprMainLength, "")
+inputstring = mRegexp.regexp_ReturnSearch(patCaseFasadesOnlyString, inputstring)
+inputstring = Mid(inputstring, 2, Len(inputstring) - 2)
+cc = Split(inputstring, ",")
+cc_count = 0
+
+For Each c In cc
+    cc_element = CStr(c)
+    cc_count = cc_count + 1
+    Set cf = New casefasade
+    cf.init
+    If mRegexp.regexp_check(patCaseFasadesIsNisha, cc_element) Then
+        cf.isNisha = True
+    ElseIf mRegexp.regexp_check(patCaseFasadesIsDver, cc_element) Then
+        cf.isDveri = True
+    ElseIf mRegexp.regexp_check(patCaseFasadesIsShufl, cc_element) Then
+        cf.isShuflyada = True
+        If InStr(1, cc_element, "имит") > 0 Then
+        cf.dopinfo = "имитация"
+        End If
+    Else
+       cf.isShuflyada = True
+    End If
+    If mRegexp.regexp_check(patCaseFasadesIsVitr, cc_element) Then
+        cf.isVitr = True
+    End If
+    
+    If mRegexp.regexp_check(patCaseFasadesQty, cc_element) Then
+        cf.qty = CInt(mRegexp.regexp_ReturnSearch(patCaseFasadesQty, cc_element))
+    Else
+        cf.qty = 1
+    End If
+    If cf.isDveri = False And cf.isNisha = False And mRegexp.regexp_check(patCaseFasadesNapravl, cc_element) Then
+        cf.isShuflyada = True
+       ' cf.napravl = cc_element
+        cf.napravl = mRegexp.regexp_ReturnSearch(patCaseFasadesNapravl, cc_element)
+        If (cf.napravl <> "") Then
+            cf.fCustomerFur = mRegexp.regexp_check(patCaseFasadesNapravlCustomer, cf.napravl)
+        End If
+
+    End If
+    If mRegexp.regexp_check(patCaseFasadesWidth, cc_element) Then
+        cf.size = CInt(mRegexp.regexp_ReturnSearch(patCaseFasadesWidth, cc_element))
+'        If cf.size >= 570 Then
+'            cf.isShuflyada = False
+'            cf.isDveri = True
+'        End If
+    End If
+    
+    casefasades.Add cf
+Next c
+
+If casefasades.Count > 0 Then
+    Dim polikIsAdded As Boolean, cf_curItem_index As Integer, cf_item As casefasade
+    Dim max As Integer
+    Dim min As Integer
+    
+    min = 9999
+    max = 0
+    For Each cf_item In casefasades
+        If cf_item.isShuflyada Then
+            If cf_item.size >= 570 And cf_item.napravl = "" Then
+                cf_item.isShuflyada = False
+                cf_item.isDveri = True
+            End If
+        End If
+        If cf_item.isDveri Then
+            If IsEmpty(casepropertyCurrent.p_DoorCount) Then
+                casepropertyCurrent.p_DoorCount = cf_item.qty
+                Else
+                casepropertyCurrent.p_DoorCount = casepropertyCurrent.p_DoorCount + cf_item.qty
+            End If
+        End If
+        If cf_item.isShuflyada Then
+            If cf_item.size > 0 Then
+                If cf_item.size > max Then max = cf_item.size
+                If cf_item.size < min Then min = cf_item.size
+            End If
+            casepropertyCurrent.p_ShuflCount = casepropertyCurrent.p_ShuflCount + cf_item.qty
+        End If
+        If cf_item.isVitr Then
+            If IsEmpty(casepropertyCurrent.p_windowcount) Then
+                casepropertyCurrent.p_windowcount = cf_item.qty
+            ElseIf casepropertyCurrent.p_windowcount = 0 Then
+                casepropertyCurrent.p_windowcount = cf_item.qty
+            Else
+               casepropertyCurrent.p_windowcount = casepropertyCurrent.p_windowcount + cf_item.qty
+            End If
+        End If
+        
+        If IsEmpty(casepropertyCurrent.p_FasadesCount) Then
+            casepropertyCurrent.p_FasadesCount = cf_item.qty
+            Else
+            casepropertyCurrent.p_FasadesCount = casepropertyCurrent.p_FasadesCount + cf_item.qty
+        End If
+       
+        
+        
+    Next cf_item
+            
+            
+    If NaprMain = "" Then NaprMain = NaprMainDefault
+     
+    cf_curItem_index = 0
+    polikIsAdded = False
+    Dim polkaQty As Integer
+    
+    For Each cf_item In casefasades
+         cf_curItem_index = cf_curItem_index + 1
+         
+         If cf_curItem_index > 1 And cf_curItem_index < casefasades.Count And (cf_item.isDveri Or cf_item.isNisha) And polikIsAdded = False Then
+           Call CabElementsAdd(CabElements.Polik, 1)
+        End If
+        If cf_item.isShuflyada Then
+          If cf_item.dopinfo = "имитация" Then
+            casepropertyCurrent.p_newname = casepropertyCurrent.p_newname & "имит" & cf_item.qty & cf_item.napravl & ","
+            Call CabElementsAdd(CabElements.ShuflImit, cf_item.qty)
+            polikIsAdded = True
+          Else
+            If cf_item.napravl = "" Then cf_item.napravl = NaprMain
+            If cf_item.fOption = "" Then cf_item.fOption = NaprMainLength
+            Call parserDop.getDrawerMountItem(main.is18(casepropertyCurrent.p_CaseColor), _
+                             cf_item.napravl, _
+                             cf_item.fOption, _
+                             cf_item.qty, _
+                             cf_item.size, _
+                             casepropertyCurrent.p_cabWidth, _
+                             casepropertyCurrent.p_cabDepth, _
+                             cf_item.dopinfo _
+                             )
+            If cf_item.qty > 1 Then
+                Call CabElementsAdd(CabElements.Polik, cf_item.qty + 1)
+                polikIsAdded = True
+            End If
+          End If
+        End If
+        If cf_item.isNisha Then
+            casepropertyCurrent.p_newname = casepropertyCurrent.p_newname & cf_item.qty & "ниш" & ","
+            polikIsAdded = True
+            Call CabElementsAdd(CabElements.Polik, 1)
+        End If
+        If cf_item.isDveri Then
+            casepropertyCurrent.p_newname = casepropertyCurrent.p_newname & cf_item.qty & "дв" & ","
+            Call CabElementsAdd(CabElements.Dverka, 1)
+      
+            polikIsAdded = True
+            Call CabElementsAdd(CabElements.Polik, 1)
+            polkaQty = GetShelfQtyFromFacadeHeight(cf_item.size)
+            If polkaQty > 0 Then
+            Call CabElementsAdd(CabElements.Polka, polkaQty)
+                casepropertyCurrent.p_newname = casepropertyCurrent.p_newname & polkaQty & "па" & ","
+            End If
+            
+        End If
+    
+        If cf_curItem_index = casefasades.Count And cf_item.isShuflyada And polikIsAdded = False And lastPolikIsNedeed = True Then
+           Call CabElementsAdd(CabElements.Polik, 1)
+        End If
+    Next cf_item
+End If
+
+If IsEmpty(casepropertyCurrent.p_DoorCount) Then casepropertyCurrent.p_DoorCount = 0
+If casepropertyCurrent.p_DoorCount > 0 Then casepropertyCurrent.p_Doormount = "110"
+
+If Mid(casepropertyCurrent.p_newname, Len(casepropertyCurrent.p_newname), 1) = "," Then
+    casepropertyCurrent.p_newname = Mid(casepropertyCurrent.p_newname, 1, Len(casepropertyCurrent.p_newname) - 1)
+End If
+
+Exit Sub
+err_parseFasades:
+casepropertyCurrent.p_FasadesString = originalinputstring
+MsgBox ("Ошибка обработки строки фасадов!!!")
+End Sub
 Private Sub pattest()
 'Dim res As String
 'parseFasades (mRegexp.regexp_ReturnSearch(patCaseFasades, "ШЛШ40(140/1,дв570/1лев)мб глуб48 "))

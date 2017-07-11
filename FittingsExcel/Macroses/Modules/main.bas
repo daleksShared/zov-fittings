@@ -1373,9 +1373,9 @@ Dim tempString As String
             NoFace = Empty
             HandleExtra = Empty
             ShelfQty = Empty
-            Set CaseElementsCollection = New Collection
-            Set CaseFittingsCollection = New Collection
-            Set params = New Collection
+            Set CaseElementsCollection = New collection
+            Set CaseFittingsCollection = New collection
+            Set params = New collection
             OrderCaseID = 0
             bHandleCheck = False
             check_deleteZaveshki = False
@@ -1631,7 +1631,33 @@ Dim tempString As String
                             
                             
                             If casepropertyCurrent.p_cabType = 3 Then
-                                 check_deleteZaveshki = True
+                                ' оптима на ушах по умолчанию
+                                Dim cs As String
+                                Select Case UCase(casepropertyCurrent.p_caseLetters)
+                                
+                                Case "ШН"
+                                    If casepropertyCurrent.p_cabIsSkos And casepropertyCurrent.p_cabWidth = 300 Then
+                                        check_deleteZaveshki = True
+                                    Else
+                                        check_deleteZaveshki = False
+                                    End If
+                                Case "ШНЗ"
+                                     If casepropertyCurrent.p_cabWidth = 300 Then
+                                        check_deleteZaveshki = True
+                                    Else
+                                        check_deleteZaveshki = False
+                                    End If
+                                Case "ШНП"
+                                    If casepropertyCurrent.p_cabIsFrez And _
+                                    (casepropertyCurrent.p_cabWidth >= 200 And casepropertyCurrent.p_cabWidth <= 300) Then
+                                        check_deleteZaveshki = True
+                                    Else
+                                        check_deleteZaveshki = False
+                                    End If
+                                Case Else
+                                    check_deleteZaveshki = False
+                                End Select
+                                 check_deleteZaveshki = False
                             ElseIf InStr(1, casepropertyCurrent.p_fullcn, "без завеш", vbTextCompare) > 0 Or InStr(1, casepropertyCurrent.p_fullcn, "б/св завеш", vbTextCompare) > 0 Then
                                 If MsgBox("Шкаф без завешек?", vbQuestion + vbYesNo + vbDefaultButton1, "Завешки на каркас") = vbYes Then
                                     check_deleteZaveshki = True
@@ -1957,6 +1983,7 @@ Dim tempString As String
                                                     k = InStr(1, FCell, "карг")
                                                     If k Then
                                                         Cells(row, FCol).Characters(k, 5).Font.Color = vbRed
+                                                        addItem2param "полкодержатели удалить"
                                                         additem2caseFittings OrderId, "карго", CaseQty, , , caseID, , row
                                                         Doormount = Null
                                                         isKarg = True
@@ -1965,7 +1992,7 @@ Dim tempString As String
                                                         k = InStr(1, FCell, "карусель")
                                                         If k Then
                                                             Cells(row, FCol).Characters(k, 5).Font.Color = vbRed
-                                                            
+                                                            addItem2param "полкодержатели удалить"
                                                             additem2caseFittings OrderId, "карго", CaseQty, , , caseID, , row
                                                             Doormount = Null
                                                             isKarg = True
@@ -2280,6 +2307,7 @@ Dim tempString As String
 
                                 If Not isKarg Then
                                     If InStr(1, Trim(ActiveCell.Value), "карг") > 0 Then
+                                        addItem2param "полкодержатели удалить"
                                         additem2caseFittings OrderId, "карго", CaseQty, , , caseID, , row
                                         Doormount = Null
                                     End If
@@ -2344,10 +2372,12 @@ Dim tempString As String
 
                                 Select Case Left(casename, 1)
                                     Case "П"
-                                        If CDec(DoorCount) + CDec(NQty) > 2 Then
-                                            additem2caseElements OrderId, "полик", (CDec(DoorCount) + NQty - 2), caseID
-                                            'FormElement.AddElementToOrder orderid, "полик", CaseQty * (CDec(DoorCount) + NQty - 2), caseID
-                                        End If
+'                                        If xInArray(casepropertyCurrent.p_caseLetters, Array("ПЛ", "ПН")) = False Then
+'                                            If CDec(DoorCount) + CDec(NQty) > 2 Then
+'                                                additem2caseElements OrderId, "полик", (CDec(DoorCount) + NQty - 2), caseID
+'                                                'FormElement.AddElementToOrder orderid, "полик", CaseQty * (CDec(DoorCount) + NQty - 2), caseID
+'                                            End If
+'                                        End If
                                         If (DoorCount) > 0 Then
                                             If ActiveCell.Font.Bold Then
                                                 additem2caseFittings OrderId, "завес", CaseQty, , , caseID, , row
@@ -2375,6 +2405,12 @@ Dim tempString As String
                                 Else
                                      addItem2param "зад стенка", "двп в паз"
                                 End If
+                               
+                               If casepropertyCurrent.p_cabType = 3 Then
+                                If UCase(casepropertyCurrent.p_caseLetters) = "ШЛГП" Then
+                                    additem2caseFittings OrderId, "VS - Термо планка на 16мм", CaseQty, , , caseID, , row
+                                End If
+                               End If
                                
 
 '                                'двп паз для 16-ки
@@ -2449,11 +2485,16 @@ Dim tempString As String
                                    '     additem2caseFittings OrderID, "завес Sensys", 2 * CaseQty, "165", , caseID, , Row
                                         'FormFitting.AddFittingToOrder OrderID, "амморт. Sensys 165", 2 * CaseQty, , , caseID, , Row
                                     'End If
-                                    additem2caseFittings OrderId, "Завес CLIP top", 2 * CaseQty, "BLUMOTION +90 под фп", , caseID, , row
+                                    If casepropertyCurrent.p_cabType <> 3 Then
+                                        additem2caseFittings OrderId, "Завес CLIP top", 2 * CaseQty, "BLUMOTION +90 под фп", , caseID, , row
+                                    End If
                                 Else
                                     If (InStr(1, ExcelCaseName, "лев", vbTextCompare) > 0 And InStr(1, ExcelCaseName, "прав", vbTextCompare) > 0) Then
                                     
-                                    additem2caseFittings OrderId, "Завес CLIP top", 2 * CaseQty, "BLUMOTION +90 под фп", , caseID, , row
+                                     If casepropertyCurrent.p_cabType <> 3 Then
+                                        additem2caseFittings OrderId, "Завес CLIP top", 2 * CaseQty, "BLUMOTION +90 под фп", , caseID, , row
+                                    End If
+                                    
                                         ElseIf InStr(1, ExcelCaseName, "лев", vbTextCompare) > 0 Or InStr(1, ExcelCaseName, "прав", vbTextCompare) > 0 Then
                                     
                                        ' If casepropertyCurrent.p_changeZaves = 0 Then
@@ -2812,7 +2853,7 @@ stenki:
                              k = InStr(1, casename, "карг")
                                                     If k Then
                                                         Cells(row, FCol).Characters(k, 5).Font.Color = vbRed
-
+                                                        addItem2param "полкодержатели удалить"
                                                         If FormFitting.AddFittingToOrder(OrderId, "карго", CaseQty, , , caseID, , row) Then
                                                             Doormount = Null
                                                             isKarg = True
@@ -3310,11 +3351,13 @@ On Error GoTo err_ProcessWHSheet
                                 
                                 If InStr(1, Cells(c, 1).Value, "карг") > 0 Then
                                     Doormount = Null
+                                    addItem2param "полкодержатели удалить"
                                     FormFitting.AddFittingToOrder OrderId, "карго", CaseQty, , , caseID, , row
                                 End If
                                 
                                 Select Case Left(casename, 1)
                                     Case "П"
+                                    If xInArray(casepropertyCurrent.p_caseLetters, Array("ПЛ", "ПН")) = False Then
                                         If CDec(DoorCount) + CDec(NQty) > 2 Then
                                             FormElement.AddElementToOrder OrderId, "полик", CaseQty * (CDec(DoorCount) + NQty - 2), caseID
                                         ElseIf (DoorCount) > 0 Then
@@ -3324,6 +3367,7 @@ On Error GoTo err_ProcessWHSheet
                                                 FormFitting.AddFittingToOrder OrderId, "завес", CaseQty, , , caseID, True, row
                                             End If
                                         End If
+                                    End If
                                 End Select
                                 
                                 Select Case casename
@@ -3452,6 +3496,7 @@ Public Sub AutoReplace()
                     If rsOrderReplacements!isfullStringSearch = False And rsOrderReplacements!isRegExp = False Then
                         If InStr(1, Cells(L, 1), "!!") = 1 Or InStr(1, Cells(L, 1), " !!") = 1 Or InStr(1, Cells(L, 1), "ручк", vbTextCompare) = 1 _
                           Or InStr(1, Cells(L, 1), "Ш", vbTextCompare) = 1 _
+                           Or InStr(1, Cells(L, 1), "О", vbTextCompare) = 1 _
                           Or InStr(1, Cells(L, 1), "П", vbTextCompare) = 1 _
                         Then
                             If InStr(1, Cells(L, 1), rsOrderReplacements!FindString, vbTextCompare) > 0 Then

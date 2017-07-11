@@ -1864,6 +1864,10 @@ Private Sub cbFittingName_Change()
             
             cbLength.Enabled = False
             
+        Case "VS - Термо планка на 16мм"
+            cbOpt.Enabled = False
+            cbLength.Enabled = False
+         
         Case "VS - OSA"
             cbOpt.AddItem "1 - 450"
             cbOpt.AddItem "1 - 600"

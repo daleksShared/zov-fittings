@@ -49,6 +49,8 @@ Private fullcn As String
 Private addGlassHolders As Boolean
 Private dvpNahlest As Boolean
 Private delete_doormount As Boolean
+Private cabIsSkos As Boolean
+Private cabIsFrez As Boolean
 
 Public Property Get p_dvpNahlest() As Boolean
     p_dvpNahlest = dvpNahlest
@@ -180,6 +182,18 @@ Public Property Get p_DoorCount() As Integer
 End Property
 Public Property Let p_DoorCount(Value As Integer)
     DoorCount = Value
+End Property
+Public Property Get p_cabIsSkos() As Boolean
+    p_cabIsSkos = cabIsSkos
+End Property
+Public Property Let p_cabIsSkos(Value As Boolean)
+    cabIsSkos = Value
+End Property
+Public Property Get p_cabIsFrez() As Boolean
+    p_cabIsFrez = cabIsSkos
+End Property
+Public Property Let p_cabIsFrez(Value As Boolean)
+    cabIsFrez = Value
 End Property
 Public Property Get p_windowcount() As Integer
     p_windowcount = windowcount
@@ -363,6 +377,12 @@ Public Property Let p_fullcn(Value As String)
     If InStr(1, tempStr, "Î", vbTextCompare) = 1 Then
         cabType = 3
         tempStr = "Ø" & Mid(tempStr, 2)
+        If InStr(1, tempStr, "ØØ", vbTextCompare) = 1 Then
+            tempStr = Mid(tempStr, 2)
+        End If
+         If InStr(1, tempStr, "ØÏ", vbTextCompare) = 1 Then
+            tempStr = Mid(tempStr, 2)
+        End If
         fullcn = tempStr
         casename = tempStr
     ElseIf mRegexp.regexp_check(patCaseIsZovModul, tempStr) Then
@@ -403,6 +423,10 @@ Public Property Let p_fullcn(Value As String)
         End If
     End If
 
+    cabIsSkos = False
+    If InStr(1, tempStr, "ñêîñ", vbTextCompare) > 0 Then
+       cabIsSkos = True
+    End If
     
     If mRegexp.regexp_check(patZKGetDepth, tempStr) Then
        casename = regexp_ReturnStringBySumOfMatches(patZKGetWithoutDepth, tempStr)
