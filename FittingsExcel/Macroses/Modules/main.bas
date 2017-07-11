@@ -2703,6 +2703,12 @@ Dim tempString As String
                                                         FormFitting.AddFittingToOrder OrderId, cfcItem.fName, cfcItem.qty, , , caseID, , row
                                                     End If
                                                 End If
+                                            ElseIf (cfcItem.fType = "doormount") Then
+                                                If cfcItem.qty > 0 Then
+                                                FormFitting.AddFittingToOrder OrderId, cfcItem.fName, cfcItem.qty, cfcItem.fOption, , caseID, , row
+                                                Else
+                                                FormFitting.AddFittingToOrder OrderId, cfcItem.fName, Empty, cfcItem.fOption, , caseID, , row
+                                                End If
                                             End If
                                         Next cfcItem
                                     End If

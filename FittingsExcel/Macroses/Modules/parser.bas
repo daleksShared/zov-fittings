@@ -1486,7 +1486,7 @@ casepropertyCurrent.p_FasadesString = storeinputstring
 MsgBox ("Ошибка обработки строки фасадов!!!")
 End Sub
 Sub parseFasadesPN(inputstring As String)
-casepropertyCurrent.p_newname = "ПН "
+casepropertyCurrent.p_newname = casepropertyCurrent.p_caseLetters & " "
 casepropertyCurrent.p_newsystem = True
 
 'стартовые элементы каркаса
@@ -1525,7 +1525,7 @@ End Sub
 Sub parseFasadesPLSH(inputstring As String)
 
 casepropertyCurrent.p_newsystem = True
-casepropertyCurrent.p_newname = "ПЛШ "
+casepropertyCurrent.p_newname = casepropertyCurrent.p_caseLetters & " "
 
 Dim storeinputstring As String
 storeinputstring = inputstring
@@ -2095,14 +2095,12 @@ Private Sub CabAddElementsFromFacadesCollection(inputstring As String, lastPolik
 
 Dim CabFasadSelectTypeFrm As CabFasadSelectType
 Set CabFasadSelectTypeFrm = New CabFasadSelectType
-
+Dim caseFur As caseFurniture
 Dim cf_count As Integer
 Dim originalinputstring As String
 originalinputstring = inputstring
 
 Dim caseElementItem As New caseElement
-
-Dim caseFur As caseFurniture
 
 While casefasades.Count > 0
 casefasades.Remove (1)
@@ -2152,9 +2150,19 @@ For Each c In cc
     ElseIf mRegexp.regexp_check(patCaseFasadesIsShufl, cc_element) Then
          cf.isShuflyada = True
          If InStr(1, cc_element, "имит") > 0 Then
-         cf.dopinfo = "имитация"
+            cf.dopinfo = "имитация"
          End If
-    ElseIf defaultFasadType <> Door And cf.size >= 354 And cf.size <= 713 Then
+     ElseIf InStr(1, cc_element, "карго", vbTextCompare) > 0 Then
+         cf.isNisha = True
+    ElseIf mRegexp.regexp_check(patCaseFasadesNapravl, cc_element) Then
+        cf.isShuflyada = True
+       ' cf.napravl = cc_element
+        cf.napravl = mRegexp.regexp_ReturnSearch(patCaseFasadesNapravl, cc_element)
+        If (cf.napravl <> "") Then
+            cf.fCustomerFur = mRegexp.regexp_check(patCaseFasadesNapravlCustomer, cf.napravl)
+        End If
+    ElseIf defaultFasadType <> Door Then
+        If cf.size >= 354 And cf.size <= 713 Then
         CabFasadSelectTypeFrm.SetFasadType (defaultFasadType)
         CabFasadSelectTypeFrm.RawFasad = cc_element
         CabFasadSelectTypeFrm.Show 1
@@ -2177,12 +2185,29 @@ For Each c In cc
                  cf.isShuflyada = True
          End Select
         End If
+        Else
+        Select Case defaultFasadType
+             Case Door
+                 cf.isDveri = True
+             Case Nisha
+                 cf.isNisha = True
+             Case Shuflyada
+                 cf.isShuflyada = True
+         End Select
+        End If
+        
     ElseIf defaultFasadType = Door Then
         cf.isDveri = True
     End If
     
-    If mRegexp.regexp_check(patCaseFasadesIsVitr, cc_element) Then
-        cf.isVitr = True
+    If cf.isDveri = True Then
+        If InStr(1, cc_element, "верх", vbTextCompare) > 0 Then
+            cf.isNonStadartDoor = True
+            cf.dopinfo = cc_element
+        End If
+        If mRegexp.regexp_check(patCaseFasadesIsVitr, cc_element) Then
+            cf.isVitr = True
+        End If
     End If
     
     If mRegexp.regexp_check(patCaseFasadesQty, cc_element) Then
@@ -2190,21 +2215,7 @@ For Each c In cc
     Else
         cf.qty = 1
     End If
-    If cf.isDveri = False And cf.isNisha = False And mRegexp.regexp_check(patCaseFasadesNapravl, cc_element) Then
-        cf.isShuflyada = True
-       ' cf.napravl = cc_element
-        cf.napravl = mRegexp.regexp_ReturnSearch(patCaseFasadesNapravl, cc_element)
-        If (cf.napravl <> "") Then
-            cf.fCustomerFur = mRegexp.regexp_check(patCaseFasadesNapravlCustomer, cf.napravl)
-        End If
-    End If
-    If mRegexp.regexp_check(patCaseFasadesWidth, cc_element) Then
-        cf.size = CInt(mRegexp.regexp_ReturnSearch(patCaseFasadesWidth, cc_element))
-'        If cf.size >= 570 Then
-'            cf.isShuflyada = False
-'            cf.isDveri = True
-'        End If
-    End If
+    
     
     casefasades.Add cf
 Next c
@@ -2299,9 +2310,23 @@ If casefasades.Count > 0 Then
             Call CabElementsAdd(CabElements.Polik, 1)
         End If
         If cf_item.isDveri Then
+            If cf_item.isNonStadartDoor Then
+                If MsgBox("Дать, как на обычную дверь или добавить завесы вручную?" & vbCrLf & "#" & cf_curItem_index & ": " & cf_item.dopinfo, vbQuestion + vbQuestion + vbYesNo + vbDefaultButton2, cf_item.dopinfo) = vbYes Then
+                    casepropertyCurrent.p_newname = casepropertyCurrent.p_newname & cf_item.qty & "дв" & ","
+                    Call CabElementsAdd(CabElements.Dverka, 1)
+                    Else
+                    casepropertyCurrent.p_newname = casepropertyCurrent.p_newname & cf_item.qty & "пк" & ","
+                    Set caseFur = New caseFurniture
+                    caseFur.init
+                    caseFur.fName = "завес для " & cf_curItem_index & ": " & cf_item.dopinfo
+                    caseFur.fOption = ""
+                    caseFur.fType = "doormount"
+                    caseFurnCollection.Add caseFur
+                End If
+            Else
             casepropertyCurrent.p_newname = casepropertyCurrent.p_newname & cf_item.qty & "дв" & ","
-            Call CabElementsAdd(CabElements.Dverka, 1)
-      
+                Call CabElementsAdd(CabElements.Dverka, 1)
+            End If
             polikIsAdded = True
             Call CabElementsAdd(CabElements.Polik, 1)
             polkaQty = GetShelfQtyFromFacadeHeight(cf_item.size)
