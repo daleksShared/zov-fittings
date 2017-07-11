@@ -877,8 +877,7 @@ Public Function parse_case(ByVal inputname As String) As String
          
         parseFasadesSHLSH (mRegexp.regexp_ReturnSearch(patCaseFasades, casepropertyCurrent.p_casename))
         result = casepropertyCurrent.p_newname
-    ElseIf Mid(inputname, 1, 2) = "ПЛ" And mRegexp.regexp_check(patCaseFasades, casepropertyCurrent.p_casename) Then
-         
+    ElseIf Mid(inputname, 1, 2) = "ПЛ" And Mid(inputname, 1, 3) <> "ПЛХ" And mRegexp.regexp_check(patCaseFasades, casepropertyCurrent.p_casename) Then
         parseFasadesPLSH (mRegexp.regexp_ReturnSearch(patCaseFasades, casepropertyCurrent.p_casename))
         result = casepropertyCurrent.p_newname
     ElseIf Mid(inputname, 1, 2) = "ПН" And mRegexp.regexp_check(patCaseFasades, casepropertyCurrent.p_casename) Then
@@ -1564,7 +1563,11 @@ caseElementItem.name = "фурнитураПеналов"
 caseElementItem.qty = 1
 CaseElements.Add caseElementItem
 
-Call CabAddElementsFromFacadesCollection(inputstring, True)
+If xInArray(casepropertyCurrent.p_caseLetters, Array("ПЛ", "ПЛД", "ПН", "ПНД")) Then
+    Call CabAddElementsFromFacadesCollection(inputstring, True, Door)
+Else
+    Call CabAddElementsFromFacadesCollection(inputstring, True)
+End If
 
 End Sub
 Sub parseFasadesSHLSH(inputstring As String)
@@ -2088,7 +2091,11 @@ Private Sub CabElementsAdd(element As CabElements, qty As Integer)
     CaseElements.Add caseElementItem
 End Sub
 
-Private Sub CabAddElementsFromFacadesCollection(inputstring As String, lastPolikIsNedeed As Boolean)
+Private Sub CabAddElementsFromFacadesCollection(inputstring As String, lastPolikIsNedeed As Boolean, Optional defaultFasadType As CabFasadType = Shuflyada)
+
+Dim CabFasadSelectTypeFrm As CabFasadSelectType
+Set CabFasadSelectTypeFrm = New CabFasadSelectType
+
 Dim cf_count As Integer
 Dim originalinputstring As String
 originalinputstring = inputstring
@@ -2133,18 +2140,47 @@ For Each c In cc
     cc_count = cc_count + 1
     Set cf = New casefasade
     cf.init
-    If mRegexp.regexp_check(patCaseFasadesIsNisha, cc_element) Then
-        cf.isNisha = True
-    ElseIf mRegexp.regexp_check(patCaseFasadesIsDver, cc_element) Then
-        cf.isDveri = True
-    ElseIf mRegexp.regexp_check(patCaseFasadesIsShufl, cc_element) Then
-        cf.isShuflyada = True
-        If InStr(1, cc_element, "имит") > 0 Then
-        cf.dopinfo = "имитация"
-        End If
-    Else
-       cf.isShuflyada = True
+    
+    If mRegexp.regexp_check(patCaseFasadesWidth, cc_element) Then
+        cf.size = CInt(mRegexp.regexp_ReturnSearch(patCaseFasadesWidth, cc_element))
     End If
+    
+    If mRegexp.regexp_check(patCaseFasadesIsNisha, cc_element) Then
+         cf.isNisha = True
+    ElseIf mRegexp.regexp_check(patCaseFasadesIsDver, cc_element) Then
+         cf.isDveri = True
+    ElseIf mRegexp.regexp_check(patCaseFasadesIsShufl, cc_element) Then
+         cf.isShuflyada = True
+         If InStr(1, cc_element, "имит") > 0 Then
+         cf.dopinfo = "имитация"
+         End If
+    ElseIf defaultFasadType <> Door And cf.size >= 354 And cf.size <= 713 Then
+        CabFasadSelectTypeFrm.SetFasadType (defaultFasadType)
+        CabFasadSelectTypeFrm.RawFasad = cc_element
+        CabFasadSelectTypeFrm.Show 1
+        If CabFasadSelectTypeFrm.result = True Then
+         Select Case CabFasadSelectTypeFrm.GetFasadtype
+             Case Door
+                 cf.isDveri = True
+             Case Nisha
+                 cf.isNisha = True
+             Case Shuflyada
+                 cf.isShuflyada = True
+         End Select
+        Else
+        Select Case defaultFasadType
+             Case Door
+                 cf.isDveri = True
+             Case Nisha
+                 cf.isNisha = True
+             Case Shuflyada
+                 cf.isShuflyada = True
+         End Select
+        End If
+    ElseIf defaultFasadType = Door Then
+        cf.isDveri = True
+    End If
+    
     If mRegexp.regexp_check(patCaseFasadesIsVitr, cc_element) Then
         cf.isVitr = True
     End If
@@ -2161,7 +2197,6 @@ For Each c In cc
         If (cf.napravl <> "") Then
             cf.fCustomerFur = mRegexp.regexp_check(patCaseFasadesNapravlCustomer, cf.napravl)
         End If
-
     End If
     If mRegexp.regexp_check(patCaseFasadesWidth, cc_element) Then
         cf.size = CInt(mRegexp.regexp_ReturnSearch(patCaseFasadesWidth, cc_element))
